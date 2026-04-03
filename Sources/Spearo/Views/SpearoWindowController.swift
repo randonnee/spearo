@@ -6,24 +6,28 @@ enum DialogPage {
     case settings
 }
 
+class DialogNavigation: ObservableObject {
+    @Published var page: DialogPage = .slots
+}
+
 struct SpearoRootView: View {
     @ObservedObject var manager: SpearoManager
     @ObservedObject var hotkeySettings: HotkeySettings
-    @State private var page: DialogPage = .slots
+    @ObservedObject var navigation: DialogNavigation
     var onClose: () -> Void
 
     var body: some View {
-        switch page {
+        switch navigation.page {
         case .slots:
             SpearoDialogView(
                 manager: manager,
                 onClose: onClose,
-                onSettings: { page = .settings }
+                onSettings: { navigation.page = .settings }
             )
         case .settings:
             SettingsView(
                 settings: hotkeySettings,
-                onBack: { page = .slots }
+                onBack: { navigation.page = .slots }
             )
         }
     }
@@ -40,6 +44,7 @@ class SpearoWindowController: NSWindowController {
     private var eventMonitor: Any?
     private var workspaceObserver: Any?
     private var isDismissing = false
+    let navigation = DialogNavigation()
 
     init(manager: SpearoManager, onClose: @escaping () -> Void) {
         self.manager = manager
@@ -77,6 +82,7 @@ class SpearoWindowController: NSWindowController {
         let contentView = SpearoRootView(
             manager: manager,
             hotkeySettings: HotkeySettings.shared,
+            navigation: navigation,
             onClose: { [weak self] in
                 self?.dismiss()
             }

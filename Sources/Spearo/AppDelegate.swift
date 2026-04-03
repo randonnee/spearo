@@ -65,6 +65,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
+        let settingsItem = NSMenuItem(title: "Settings...", action: #selector(openSettings), keyEquivalent: ",")
+        settingsItem.target = self
+        menu.addItem(settingsItem)
+
         let quitItem = NSMenuItem(title: "Quit Spearo", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         menu.addItem(quitItem)
 
@@ -127,6 +131,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         spearoWindowController = SpearoWindowController(manager: spearoManager) { [weak self] in
             self?.refreshMenu()
             self?.spearoWindowController = nil
+        }
+    }
+
+    @objc private func openSettings() {
+        if let controller = spearoWindowController {
+            // Dialog already open — just switch to settings page
+            controller.navigation.page = .settings
+        } else {
+            // Open dialog directly on settings page
+            spearoWindowController = SpearoWindowController(manager: spearoManager) { [weak self] in
+                self?.refreshMenu()
+                self?.spearoWindowController = nil
+            }
+            spearoWindowController?.navigation.page = .settings
         }
     }
 
