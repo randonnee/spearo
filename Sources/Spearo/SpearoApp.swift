@@ -5,7 +5,8 @@ struct SpearoApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var body: some Scene {
-        // We use a menu bar app pattern — no main window
+        // Menu bar only — no main window.
+        // Settings are accessible inside the Spearo dialog (Cmd+,).
         Settings {
             EmptyView()
         }

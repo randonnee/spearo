@@ -2,9 +2,12 @@ import Carbon.HIToolbox
 import Cocoa
 
 class HotkeyManager {
-    private var hotkeys: [EventHotKeyRef?] = []
+    private var hotkeys: [UInt32: EventHotKeyRef] = [:]
     private var handlers: [UInt32: () -> Void] = [:]
     private var nextID: UInt32 = 1
+
+    /// Map from a caller-defined name to the registered hotkey ID, for re-registration.
+    private var namedHotkeys: [String: UInt32] = [:]
 
     private static var instance: HotkeyManager?
 
@@ -13,7 +16,9 @@ class HotkeyManager {
         installEventHandler()
     }
 
-    func register(keyCode: UInt32, modifiers: UInt32, handler: @escaping () -> Void) {
+    /// Register a hotkey. Returns the internal ID.
+    @discardableResult
+    func register(keyCode: UInt32, modifiers: UInt32, handler: @escaping () -> Void) -> UInt32 {
         let id = nextID
         nextID += 1
 
@@ -29,12 +34,27 @@ class HotkeyManager {
             &hotkeyRef
         )
 
-        if status == noErr {
-            hotkeys.append(hotkeyRef)
+        if status == noErr, let ref = hotkeyRef {
+            hotkeys[id] = ref
             handlers[id] = handler
         } else {
             print("Failed to register hotkey (keyCode: \(keyCode), modifiers: \(modifiers)): \(status)")
         }
+
+        return id
+    }
+
+    /// Register a hotkey with a name so it can be re-registered later.
+    func register(name: String, keyCode: UInt32, modifiers: UInt32, handler: @escaping () -> Void) {
+        // Unregister previous binding for this name, if any
+        if let oldID = namedHotkeys[name], let ref = hotkeys[oldID] {
+            UnregisterEventHotKey(ref)
+            hotkeys.removeValue(forKey: oldID)
+            handlers.removeValue(forKey: oldID)
+        }
+
+        let id = register(keyCode: keyCode, modifiers: modifiers, handler: handler)
+        namedHotkeys[name] = id
     }
 
     private func installEventHandler() {
@@ -70,10 +90,8 @@ class HotkeyManager {
     }
 
     deinit {
-        for hotkey in hotkeys {
-            if let ref = hotkey {
-                UnregisterEventHotKey(ref)
-            }
+        for (_, ref) in hotkeys {
+            UnregisterEventHotKey(ref)
         }
     }
 }

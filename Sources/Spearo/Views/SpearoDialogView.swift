@@ -8,6 +8,7 @@ enum SelectMode {
 struct SpearoDialogView: View {
     @ObservedObject var manager: SpearoManager
     var onClose: () -> Void
+    var onSettings: () -> Void
 
     @State private var selectedIndex: Int = 0
     @State private var commandBuffer: String = ""
@@ -73,6 +74,7 @@ struct SpearoDialogView: View {
                     hintLabel("p", "paste")
                     hintLabel("v", "select")
                     hintLabel("\u{23CE}", "switch")
+                    hintLabel("\u{2318},", "settings")
                     hintLabel("esc", "close")
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
@@ -292,6 +294,14 @@ struct SpearoDialogView: View {
             onClose()
             return true
 
+        case ",":
+            if event.modifierFlags.contains(.command) {
+                commandBuffer = ""
+                onSettings()
+                return true
+            }
+            return false
+
         default:
             if !key.isEmpty {
                 commandBuffer = ""
@@ -395,6 +405,16 @@ class KeyCaptureView: NSView {
     var onKeyDown: ((NSEvent) -> Bool)?
 
     override var acceptsFirstResponder: Bool { true }
+
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        // Intercept Cmd-key shortcuts before AppKit routes them to menus
+        if event.modifierFlags.contains(.command) {
+            if onKeyDown?(event) == true {
+                return true
+            }
+        }
+        return super.performKeyEquivalent(with: event)
+    }
 
     override func keyDown(with event: NSEvent) {
         if onKeyDown?(event) != true {

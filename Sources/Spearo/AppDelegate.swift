@@ -7,6 +7,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var hotkeyManager: HotkeyManager!
     private var spearoManager: SpearoManager!
     private var spearoWindowController: SpearoWindowController?
+    private let hotkeySettings = HotkeySettings.shared
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Hide dock icon — menu bar only
@@ -23,6 +24,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         setupMenuBar()
         setupHotkeys()
+
+        // Re-register the dialog hotkey when settings change
+        hotkeySettings.onChange = { [weak self] in
+            self?.registerDialogHotkey()
+            self?.refreshMenu()
+        }
     }
 
     private func setupMenuBar() {
@@ -41,7 +48,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         addItem.target = self
         menu.addItem(addItem)
 
-        let dialogItem = NSMenuItem(title: "Open Spearo (Ctrl+Shift+D)", action: #selector(openSpearoDialog), keyEquivalent: "")
+        let dialogLabel = "Open Spearo (\(hotkeySettings.displayString))"
+        let dialogItem = NSMenuItem(title: dialogLabel, action: #selector(openSpearoDialog), keyEquivalent: "")
         dialogItem.target = self
         menu.addItem(dialogItem)
 
@@ -86,18 +94,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self?.addCurrentApp()
         }
 
-        // Ctrl+Shift+D to open dialog
-        hotkeyManager.register(keyCode: UInt32(kVK_ANSI_D), modifiers: ctrlShift) { [weak self] in
+        // Configurable dialog hotkey
+        registerDialogHotkey()
+    }
+
+    private func registerDialogHotkey() {
+        hotkeyManager.register(
+            name: "openDialog",
+            keyCode: hotkeySettings.keyCode,
+            modifiers: hotkeySettings.modifiers
+        ) { [weak self] in
             self?.openSpearoDialog()
         }
     }
 
     private func switchSlot(_ index: Int) {
         // Dismiss the dialog first so it doesn't fight for focus
-        if let existing = spearoWindowController {
-            existing.dismiss()
-            spearoWindowController = nil
-        }
+        dismissDialog()
         spearoManager.switchToSlot(index)
     }
 
@@ -107,9 +120,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func openSpearoDialog() {
-        if let existing = spearoWindowController {
-            existing.dismiss()
-            spearoWindowController = nil
+        if spearoWindowController != nil {
+            dismissDialog()
             return
         }
         spearoWindowController = SpearoWindowController(manager: spearoManager) { [weak self] in
@@ -118,4 +130,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    private func dismissDialog() {
+        guard let controller = spearoWindowController else { return }
+        spearoWindowController = nil
+        controller.dismiss()
+    }
 }

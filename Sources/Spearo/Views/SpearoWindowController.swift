@@ -1,6 +1,34 @@
 import AppKit
 import SwiftUI
 
+enum DialogPage {
+    case slots
+    case settings
+}
+
+struct SpearoRootView: View {
+    @ObservedObject var manager: SpearoManager
+    @ObservedObject var hotkeySettings: HotkeySettings
+    @State private var page: DialogPage = .slots
+    var onClose: () -> Void
+
+    var body: some View {
+        switch page {
+        case .slots:
+            SpearoDialogView(
+                manager: manager,
+                onClose: onClose,
+                onSettings: { page = .settings }
+            )
+        case .settings:
+            SettingsView(
+                settings: hotkeySettings,
+                onBack: { page = .slots }
+            )
+        }
+    }
+}
+
 // NSPanel subclass that can become key window despite being borderless
 class SpearoPanel: NSPanel {
     override var canBecomeKey: Bool { true }
@@ -11,6 +39,7 @@ class SpearoWindowController: NSWindowController {
     private var manager: SpearoManager
     private var eventMonitor: Any?
     private var workspaceObserver: Any?
+    private var isDismissing = false
 
     init(manager: SpearoManager, onClose: @escaping () -> Void) {
         self.manager = manager
@@ -44,10 +73,14 @@ class SpearoWindowController: NSWindowController {
 
         super.init(window: panel)
 
-        // Wire up the dialog's onClose to dismiss this panel
-        let contentView = SpearoDialogView(manager: manager, onClose: { [weak self] in
-            self?.dismiss()
-        })
+        // Wire up the root view that switches between slots and settings
+        let contentView = SpearoRootView(
+            manager: manager,
+            hotkeySettings: HotkeySettings.shared,
+            onClose: { [weak self] in
+                self?.dismiss()
+            }
+        )
         let hostingView = NSHostingView(rootView: contentView)
         hostingView.translatesAutoresizingMaskIntoConstraints = false
 
@@ -93,6 +126,9 @@ class SpearoWindowController: NSWindowController {
     }
 
     func dismiss() {
+        guard !isDismissing else { return }
+        isDismissing = true
+
         if let monitor = eventMonitor {
             NSEvent.removeMonitor(monitor)
             eventMonitor = nil
@@ -102,7 +138,9 @@ class SpearoWindowController: NSWindowController {
             workspaceObserver = nil
         }
         window?.orderOut(nil)
-        onClose?()
+        let callback = onClose
+        onClose = nil
+        callback?()
     }
 
     deinit {
