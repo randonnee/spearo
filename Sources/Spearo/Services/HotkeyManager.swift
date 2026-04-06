@@ -47,14 +47,28 @@ class HotkeyManager {
     /// Register a hotkey with a name so it can be re-registered later.
     func register(name: String, keyCode: UInt32, modifiers: UInt32, handler: @escaping () -> Void) {
         // Unregister previous binding for this name, if any
+        unregister(name: name)
+
+        let id = register(keyCode: keyCode, modifiers: modifiers, handler: handler)
+        namedHotkeys[name] = id
+    }
+
+    /// Unregister a single named hotkey.
+    func unregister(name: String) {
         if let oldID = namedHotkeys[name], let ref = hotkeys[oldID] {
             UnregisterEventHotKey(ref)
             hotkeys.removeValue(forKey: oldID)
             handlers.removeValue(forKey: oldID)
         }
+        namedHotkeys.removeValue(forKey: name)
+    }
 
-        let id = register(keyCode: keyCode, modifiers: modifiers, handler: handler)
-        namedHotkeys[name] = id
+    /// Unregister all named hotkeys whose name starts with the given prefix.
+    func unregisterAll(prefix: String) {
+        let matching = namedHotkeys.keys.filter { $0.hasPrefix(prefix) }
+        for name in matching {
+            unregister(name: name)
+        }
     }
 
     private func installEventHandler() {

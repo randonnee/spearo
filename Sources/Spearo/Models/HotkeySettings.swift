@@ -2,53 +2,19 @@ import AppKit
 import Carbon.HIToolbox
 import Foundation
 
-/// Persisted settings for the configurable dialog-open hotkey.
-class HotkeySettings: ObservableObject {
-    static let shared = HotkeySettings()
+// MARK: - Slot hotkey mode
 
-    private let keyCodeKey = "spearo.dialogHotkey.keyCode"
-    private let modifiersKey = "spearo.dialogHotkey.modifiers"
+enum SlotHotkeyMode: String, Codable, CaseIterable {
+    case fKeys          // F1-F12 (no modifiers)
+    case modifierNumber // Modifier+1 through Modifier+0 (+ - =) for 12 slots
+    case custom         // User-defined per-slot hotkey
+}
 
-    /// Carbon virtual key code (e.g. kVK_ANSI_D = 0x02)
-    @Published var keyCode: UInt32 {
-        didSet { save() }
-    }
+/// A single key binding: key code + modifier mask.
+struct KeyBinding: Codable, Equatable {
+    var keyCode: UInt32
+    var modifiers: UInt32
 
-    /// Carbon modifier mask (e.g. controlKey | shiftKey)
-    @Published var modifiers: UInt32 {
-        didSet { save() }
-    }
-
-    /// Called after the hotkey is changed so the app delegate can re-register.
-    var onChange: (() -> Void)?
-
-    private init() {
-        let defaults = UserDefaults.standard
-        if defaults.object(forKey: keyCodeKey) != nil {
-            keyCode = UInt32(defaults.integer(forKey: keyCodeKey))
-            modifiers = UInt32(defaults.integer(forKey: modifiersKey))
-        } else {
-            // Default: Ctrl+Shift+D
-            keyCode = UInt32(kVK_ANSI_D)
-            modifiers = UInt32(controlKey | shiftKey)
-        }
-    }
-
-    func update(keyCode: UInt32, modifiers: UInt32) {
-        self.keyCode = keyCode
-        self.modifiers = modifiers
-        onChange?()
-    }
-
-    private func save() {
-        let defaults = UserDefaults.standard
-        defaults.set(Int(keyCode), forKey: keyCodeKey)
-        defaults.set(Int(modifiers), forKey: modifiersKey)
-    }
-
-    // MARK: - Display helpers
-
-    /// Human-readable label like "Ctrl+Shift+D"
     var displayString: String {
         var parts: [String] = []
         if modifiers & UInt32(controlKey) != 0 { parts.append("Ctrl") }
@@ -57,6 +23,179 @@ class HotkeySettings: ObservableObject {
         if modifiers & UInt32(cmdKey) != 0 { parts.append("Cmd") }
         parts.append(keyCodeToString(keyCode))
         return parts.joined(separator: "+")
+    }
+}
+
+/// Persisted settings for all configurable hotkeys.
+class HotkeySettings: ObservableObject {
+    static let shared = HotkeySettings()
+
+    // MARK: - Dialog hotkey
+
+    private let dialogKeyCodeKey = "spearo.dialogHotkey.keyCode"
+    private let dialogModifiersKey = "spearo.dialogHotkey.modifiers"
+
+    @Published var keyCode: UInt32 {
+        didSet { saveDialog() }
+    }
+
+    @Published var modifiers: UInt32 {
+        didSet { saveDialog() }
+    }
+
+    // MARK: - Slot hotkey mode
+
+    private let slotModeKey = "spearo.slotHotkeyMode"
+    private let slotModifierKey = "spearo.slotModifier"
+    private let slotCustomBindingsKey = "spearo.slotCustomBindings"
+
+    @Published var slotMode: SlotHotkeyMode {
+        didSet { saveSlotSettings() }
+    }
+
+    /// Modifier mask used in .modifierNumber mode (default: Ctrl)
+    @Published var slotModifier: UInt32 {
+        didSet { saveSlotSettings() }
+    }
+
+    /// Per-slot custom key bindings (12 entries, nil = unbound)
+    @Published var customBindings: [KeyBinding?] {
+        didSet { saveSlotSettings() }
+    }
+
+    // MARK: - Callbacks
+
+    /// Called after the dialog hotkey is changed.
+    var onChange: (() -> Void)?
+
+    /// Called after slot hotkey configuration changes.
+    var onSlotHotkeysChanged: (() -> Void)?
+
+    // MARK: - Init
+
+    private init() {
+        let defaults = UserDefaults.standard
+
+        // Dialog hotkey
+        if defaults.object(forKey: dialogKeyCodeKey) != nil {
+            keyCode = UInt32(defaults.integer(forKey: dialogKeyCodeKey))
+            modifiers = UInt32(defaults.integer(forKey: dialogModifiersKey))
+        } else {
+            keyCode = UInt32(kVK_ANSI_D)
+            modifiers = UInt32(controlKey | shiftKey)
+        }
+
+        // Slot mode
+        if let raw = defaults.string(forKey: slotModeKey),
+           let mode = SlotHotkeyMode(rawValue: raw) {
+            slotMode = mode
+        } else {
+            slotMode = .fKeys
+        }
+
+        // Slot modifier for modifierNumber mode
+        if defaults.object(forKey: slotModifierKey) != nil {
+            slotModifier = UInt32(defaults.integer(forKey: slotModifierKey))
+        } else {
+            slotModifier = UInt32(controlKey)
+        }
+
+        // Custom bindings
+        if let data = defaults.data(forKey: slotCustomBindingsKey),
+           let decoded = try? JSONDecoder().decode([KeyBinding?].self, from: data) {
+            customBindings = decoded
+            while customBindings.count < 12 { customBindings.append(nil) }
+        } else {
+            customBindings = Array(repeating: nil, count: 12)
+        }
+    }
+
+    // MARK: - Dialog hotkey
+
+    func update(keyCode: UInt32, modifiers: UInt32) {
+        self.keyCode = keyCode
+        self.modifiers = modifiers
+        onChange?()
+    }
+
+    var displayString: String {
+        KeyBinding(keyCode: keyCode, modifiers: modifiers).displayString
+    }
+
+    private func saveDialog() {
+        let defaults = UserDefaults.standard
+        defaults.set(Int(keyCode), forKey: dialogKeyCodeKey)
+        defaults.set(Int(modifiers), forKey: dialogModifiersKey)
+    }
+
+    // MARK: - Slot hotkey settings
+
+    func updateSlotMode(_ mode: SlotHotkeyMode) {
+        slotMode = mode
+        onSlotHotkeysChanged?()
+    }
+
+    func updateSlotModifier(_ modifier: UInt32) {
+        slotModifier = modifier
+        onSlotHotkeysChanged?()
+    }
+
+    func updateCustomBinding(index: Int, keyCode: UInt32, modifiers: UInt32) {
+        guard index >= 0, index < 12 else { return }
+        customBindings[index] = KeyBinding(keyCode: keyCode, modifiers: modifiers)
+        onSlotHotkeysChanged?()
+    }
+
+    func clearCustomBinding(index: Int) {
+        guard index >= 0, index < 12 else { return }
+        customBindings[index] = nil
+        onSlotHotkeysChanged?()
+    }
+
+    private func saveSlotSettings() {
+        let defaults = UserDefaults.standard
+        defaults.set(slotMode.rawValue, forKey: slotModeKey)
+        defaults.set(Int(slotModifier), forKey: slotModifierKey)
+        if let data = try? JSONEncoder().encode(customBindings) {
+            defaults.set(data, forKey: slotCustomBindingsKey)
+        }
+    }
+
+    // MARK: - Computed bindings for each slot
+
+    /// Returns the key binding for a given slot index (0-11) based on the current mode.
+    func bindingForSlot(_ index: Int) -> KeyBinding? {
+        switch slotMode {
+        case .fKeys:
+            let fKeys: [Int] = [
+                kVK_F1, kVK_F2, kVK_F3, kVK_F4, kVK_F5, kVK_F6,
+                kVK_F7, kVK_F8, kVK_F9, kVK_F10, kVK_F11, kVK_F12
+            ]
+            guard index >= 0, index < fKeys.count else { return nil }
+            return KeyBinding(keyCode: UInt32(fKeys[index]), modifiers: 0)
+
+        case .modifierNumber:
+            // 1-9, 0, -, = for slots 1-12
+            let numberKeys: [Int] = [
+                kVK_ANSI_1, kVK_ANSI_2, kVK_ANSI_3, kVK_ANSI_4, kVK_ANSI_5,
+                kVK_ANSI_6, kVK_ANSI_7, kVK_ANSI_8, kVK_ANSI_9, kVK_ANSI_0,
+                kVK_ANSI_Minus, kVK_ANSI_Equal
+            ]
+            guard index >= 0, index < numberKeys.count else { return nil }
+            return KeyBinding(keyCode: UInt32(numberKeys[index]), modifiers: slotModifier)
+
+        case .custom:
+            guard index >= 0, index < customBindings.count else { return nil }
+            return customBindings[index]
+        }
+    }
+
+    /// Short label for the slot badge in the dialog (e.g. "F1", "Ctrl+1", "Opt+A")
+    func slotLabel(_ index: Int) -> String {
+        if let binding = bindingForSlot(index) {
+            return binding.displayString
+        }
+        return "?"
     }
 }
 
@@ -101,4 +240,14 @@ func carbonModifiers(from flags: NSEvent.ModifierFlags) -> UInt32 {
     if flags.contains(.shift) { mods |= UInt32(shiftKey) }
     if flags.contains(.command) { mods |= UInt32(cmdKey) }
     return mods
+}
+
+/// Human-readable label for a Carbon modifier mask.
+func modifierDisplayString(_ mods: UInt32) -> String {
+    var parts: [String] = []
+    if mods & UInt32(controlKey) != 0 { parts.append("Ctrl") }
+    if mods & UInt32(optionKey) != 0 { parts.append("Opt") }
+    if mods & UInt32(shiftKey) != 0 { parts.append("Shift") }
+    if mods & UInt32(cmdKey) != 0 { parts.append("Cmd") }
+    return parts.joined(separator: "+")
 }

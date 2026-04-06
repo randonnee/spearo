@@ -8,7 +8,8 @@ let package = Package(
         .executableTarget(
             name: "Spearo",
             path: "Sources/Spearo",
-            exclude: ["Info.plist", "Assets.xcassets"]
+            exclude: ["Info.plist", "Assets.xcassets"],
+            resources: [.copy("Resources/spear-tip.svg")]
         )
     ]
 )

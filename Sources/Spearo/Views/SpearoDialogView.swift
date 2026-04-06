@@ -267,7 +267,8 @@ struct SpearoDialogView: View {
                 newSlots[selectedIndex] = yanked
                 manager.setSlots(newSlots)
                 yankBuffer = current
-                flashStatus("Placed \(yanked.name) at F\(selectedIndex + 1)")
+                let label = HotkeySettings.shared.slotLabel(selectedIndex)
+                flashStatus("Placed \(yanked.name) at \(label)")
             } else {
                 flashStatus("Nothing to paste")
             }
@@ -319,13 +320,20 @@ struct SlotRow: View {
     let isCursor: Bool
     let isInSelection: Bool
 
+    private var slotLabel: String {
+        HotkeySettings.shared.slotLabel(index)
+    }
+
     var body: some View {
         HStack(spacing: 12) {
-            // Function key badge
-            Text("F\(index + 1)")
+            // Hotkey badge
+            Text(slotLabel)
                 .font(.system(size: 11, weight: .bold, design: .rounded))
                 .foregroundColor(isCursor ? .white : .white.opacity(0.45))
-                .frame(width: 28, height: 22)
+                .lineLimit(1)
+                .fixedSize()
+                .padding(.horizontal, 5)
+                .frame(minWidth: 28, minHeight: 22, maxHeight: 22)
                 .background(
                     RoundedRectangle(cornerRadius: 5)
                         .fill(isCursor ? Color.accentColor.opacity(0.6) : Color.white.opacity(0.08))

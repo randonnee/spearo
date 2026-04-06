@@ -30,14 +30,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self?.registerDialogHotkey()
             self?.refreshMenu()
         }
+
+        // Re-register slot hotkeys when slot settings change
+        hotkeySettings.onSlotHotkeysChanged = { [weak self] in
+            self?.registerSlotHotkeys()
+            self?.refreshMenu()
+        }
     }
 
     private func setupMenuBar() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
         if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "arrow.trianglehead.swap", accessibilityDescription: "Spearo")
-            button.image?.size = NSSize(width: 18, height: 18)
+            if let svgURL = Bundle.module.url(forResource: "spear-tip", withExtension: "svg"),
+               let icon = NSImage(contentsOf: svgURL) {
+                icon.isTemplate = true
+                icon.size = NSSize(width: 18, height: 18)
+                button.image = icon
+            }
         }
 
         let menu = NSMenu()
@@ -55,11 +65,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
-        // Show current assignments
+        // Show current assignments with correct hotkey labels
         for i in 0..<spearoManager.visibleSlotCount {
             let slot = spearoManager.slots[i]
-            let label = slot != nil ? slot!.name : "(empty)"
-            let item = NSMenuItem(title: "F\(i + 1): \(label)", action: nil, keyEquivalent: "")
+            let appLabel = slot != nil ? slot!.name : "(empty)"
+            let hotkeyLabel = hotkeySettings.slotLabel(i)
+            let item = NSMenuItem(title: "\(hotkeyLabel): \(appLabel)", action: nil, keyEquivalent: "")
             menu.addItem(item)
         }
 
@@ -80,26 +91,35 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func setupHotkeys() {
-        // F1-F12 for app switching
-        let fKeys: [Int] = [
-            kVK_F1, kVK_F2, kVK_F3, kVK_F4, kVK_F5, kVK_F6,
-            kVK_F7, kVK_F8, kVK_F9, kVK_F10, kVK_F11, kVK_F12
-        ]
-        for (index, keyCode) in fKeys.enumerated() {
-            let slotIndex = index
-            hotkeyManager.register(keyCode: UInt32(keyCode), modifiers: 0) { [weak self] in
-                self?.switchSlot(slotIndex)
-            }
-        }
+        // Slot hotkeys (F1-F12, Modifier+Number, or custom)
+        registerSlotHotkeys()
 
         // Ctrl+Shift+A to add current app
         let ctrlShift: UInt32 = UInt32(controlKey | shiftKey)
-        hotkeyManager.register(keyCode: UInt32(kVK_ANSI_A), modifiers: ctrlShift) { [weak self] in
+        hotkeyManager.register(name: "addApp", keyCode: UInt32(kVK_ANSI_A), modifiers: ctrlShift) { [weak self] in
             self?.addCurrentApp()
         }
 
         // Configurable dialog hotkey
         registerDialogHotkey()
+    }
+
+    private func registerSlotHotkeys() {
+        // Unregister all existing slot hotkeys
+        hotkeyManager.unregisterAll(prefix: "slot.")
+
+        // Register based on current mode
+        for i in 0..<12 {
+            guard let binding = hotkeySettings.bindingForSlot(i) else { continue }
+            let slotIndex = i
+            hotkeyManager.register(
+                name: "slot.\(i)",
+                keyCode: binding.keyCode,
+                modifiers: binding.modifiers
+            ) { [weak self] in
+                self?.switchSlot(slotIndex)
+            }
+        }
     }
 
     private func registerDialogHotkey() {
@@ -136,10 +156,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func openSettings() {
         if let controller = spearoWindowController {
-            // Dialog already open — just switch to settings page
             controller.navigation.page = .settings
         } else {
-            // Open dialog directly on settings page
             spearoWindowController = SpearoWindowController(manager: spearoManager) { [weak self] in
                 self?.refreshMenu()
                 self?.spearoWindowController = nil

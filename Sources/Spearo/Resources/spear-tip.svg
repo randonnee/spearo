@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 64 64">
+  <!--
+    Spearfishing tip icon — rotated 45 degrees so the tip points
+    toward the top-right, matching the reference photo angle.
+  -->
+  <g transform="rotate(45, 32, 32)">
+    <!-- Main shaft -->
+    <rect x="30" y="24" width="4" height="36" rx="1" fill="black"/>
+
+    <!-- Central point / spear head (diamond narrowing to tip) -->
+    <polygon points="32,0 36,20 32,24 28,20" fill="black"/>
+
+    <!-- Right barb — large, blade-like, swept back -->
+    <path d="
+      M 34,20
+      L 54,32
+      Q 52,30 46,30
+      L 34,26
+      Z
+    " fill="black"/>
+
+    <!-- Left barb — mirror of right -->
+    <path d="
+      M 30,20
+      L 10,32
+      Q 12,30 18,30
+      L 30,26
+      Z
+    " fill="black"/>
+  </g>
+</svg>
