@@ -136,8 +136,20 @@ class SpearoWindowController: NSWindowController {
             forName: NSWorkspace.didActivateApplicationNotification,
             object: nil,
             queue: .main
-        ) { [weak self] _ in
-            self?.dismiss()
+        ) { [weak self] notification in
+            guard
+                let self,
+                let activatedApp = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
+            else {
+                return
+            }
+
+            // Ignore Spearo becoming active so clicks inside the panel don't dismiss it.
+            if activatedApp.processIdentifier == ProcessInfo.processInfo.processIdentifier {
+                return
+            }
+
+            self.dismiss()
         }
     }
 
