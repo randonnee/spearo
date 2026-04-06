@@ -7,7 +7,7 @@ enum SelectMode {
 
 struct SpearoDialogView: View {
     @ObservedObject var manager: SpearoManager
-    var onClose: () -> Void
+    @Environment(\.dialogClose) private var onClose
     var onSettings: () -> Void
 
     @State private var selectedIndex: Int = 0

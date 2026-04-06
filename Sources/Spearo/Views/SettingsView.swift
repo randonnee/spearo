@@ -3,11 +3,11 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var settings: HotkeySettings
+    @Environment(\.dialogClose) private var onClose
     @State private var isRecordingDialog = false
     @State private var isRecordingAddApp = false
     @State private var isRecordingModifier = false
     @State private var recordingSlotIndex: Int? = nil
-    var onBack: () -> Void
 
     private var isAnyRecording: Bool {
         isRecordingDialog || isRecordingAddApp || isRecordingModifier || recordingSlotIndex != nil
@@ -84,7 +84,7 @@ struct SettingsView: View {
 
             // Hint bar
             HStack(spacing: 16) {
-                hintLabel("esc", "back")
+                hintLabel("esc", "close")
             }
             .frame(maxWidth: .infinity, alignment: .center)
             .padding(.horizontal, 16)
@@ -94,7 +94,7 @@ struct SettingsView: View {
         .background(KeyEventHandlingView(isActive: !isAnyRecording, onKeyDown: { event in
             let key = event.charactersIgnoringModifiers ?? ""
             if key == "\u{1B}" && !isRecordingDialog && !isRecordingAddApp && !isRecordingModifier && recordingSlotIndex == nil {
-                onBack()
+                onClose()
                 return true
             }
             return false

@@ -1,6 +1,19 @@
 import AppKit
 import SwiftUI
 
+// MARK: - Environment key for dialog dismissal
+
+private struct DialogCloseKey: EnvironmentKey {
+    static let defaultValue: () -> Void = {}
+}
+
+extension EnvironmentValues {
+    var dialogClose: () -> Void {
+        get { self[DialogCloseKey.self] }
+        set { self[DialogCloseKey.self] = newValue }
+    }
+}
+
 enum DialogPage {
     case slots
     case settings
@@ -17,19 +30,18 @@ struct SpearoRootView: View {
     var onClose: () -> Void
 
     var body: some View {
-        switch navigation.page {
-        case .slots:
-            SpearoDialogView(
-                manager: manager,
-                onClose: onClose,
-                onSettings: { navigation.page = .settings }
-            )
-        case .settings:
-            SettingsView(
-                settings: hotkeySettings,
-                onBack: { navigation.page = .slots }
-            )
+        Group {
+            switch navigation.page {
+            case .slots:
+                SpearoDialogView(
+                    manager: manager,
+                    onSettings: { navigation.page = .settings }
+                )
+            case .settings:
+                SettingsView(settings: hotkeySettings)
+            }
         }
+        .environment(\.dialogClose, onClose)
     }
 }
 
@@ -44,11 +56,13 @@ class SpearoWindowController: NSWindowController {
     private var eventMonitor: Any?
     private var workspaceObserver: Any?
     private var isDismissing = false
+    private var previousApp: NSRunningApplication?
     let navigation = DialogNavigation()
 
     init(manager: SpearoManager, onClose: @escaping () -> Void) {
         self.manager = manager
         self.onClose = onClose
+        self.previousApp = NSWorkspace.shared.frontmostApplication
 
         // Borderless, transparent panel — Spotlight style
         let panel = SpearoPanel(
@@ -144,6 +158,12 @@ class SpearoWindowController: NSWindowController {
             workspaceObserver = nil
         }
         window?.orderOut(nil)
+
+        // Restore focus to the app that was active before the dialog opened
+        if let app = previousApp, !app.isTerminated {
+            app.activate()
+        }
+
         let callback = onClose
         onClose = nil
         callback?()
