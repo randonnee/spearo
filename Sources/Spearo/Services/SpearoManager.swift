@@ -16,7 +16,13 @@ class SpearoManager: ObservableObject {
     private let storageKey = "spearo.slots"
 
     private init() {
-        load()
+      guard let data = UserDefaults.standard.data(forKey: storageKey) else { return }
+      let decoder = JSONDecoder()
+      guard let stored = try? decoder.decode([SpearoSlot?].self, from: data) else { return }
+      slots = stored
+      // Ensure we always have exactly maxSlots slots
+      while slots.count < SpearoManager.maxSlots { slots.append(nil) }
+      if slots.count > SpearoManager.maxSlots { slots = Array(slots.prefix(SpearoManager.maxSlots)) }
     }
 
     // MARK: - App Switching
@@ -93,15 +99,5 @@ class SpearoManager: ObservableObject {
         // Encode entire array as a single JSON blob to avoid NSNull issues
         guard let data = try? encoder.encode(slots) else { return }
         UserDefaults.standard.set(data, forKey: storageKey)
-    }
-
-    private func load() {
-        guard let data = UserDefaults.standard.data(forKey: storageKey) else { return }
-        let decoder = JSONDecoder()
-        guard let stored = try? decoder.decode([SpearoSlot?].self, from: data) else { return }
-        slots = stored
-        // Ensure we always have exactly maxSlots slots
-        while slots.count < SpearoManager.maxSlots { slots.append(nil) }
-        if slots.count > SpearoManager.maxSlots { slots = Array(slots.prefix(SpearoManager.maxSlots)) }
     }
 }

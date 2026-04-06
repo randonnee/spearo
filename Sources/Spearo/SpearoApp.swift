@@ -7,8 +7,5 @@ struct SpearoApp: App {
     var body: some Scene {
         // Menu bar only — no main window.
         // Settings are accessible inside the Spearo dialog (Cmd+,).
-        Settings {
-            EmptyView()
-        }
     }
 }
