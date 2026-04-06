@@ -19,7 +19,7 @@ struct SettingsView: View {
             HStack {
                 Text("Settings")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.9))
+                    .foregroundColor(Color(nsColor: .labelColor))
                 Spacer()
             }
             .padding(.horizontal, 16)
@@ -122,14 +122,14 @@ struct SettingsView: View {
         } label: {
             Text(label)
                 .font(.system(size: 11, weight: .medium, design: .rounded))
-                .foregroundColor(settings.slotMode == mode ? .white : .white.opacity(0.5))
+                .foregroundColor(settings.slotMode == mode ? .white : Color(nsColor: .secondaryLabelColor))
         }
         .buttonStyle(.plain)
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
         .background(
             RoundedRectangle(cornerRadius: 5)
-                .fill(settings.slotMode == mode ? Color.accentColor.opacity(0.5) : Color.white.opacity(0.08))
+                .fill(settings.slotMode == mode ? Color.accentColor.opacity(0.85) : Color(nsColor: .controlBackgroundColor).opacity(0.95))
         )
     }
 
@@ -148,7 +148,7 @@ struct SettingsView: View {
         HStack {
             Text("Slot \(index + 1)")
                 .font(.system(size: 12))
-                .foregroundColor(.white.opacity(0.6))
+                .foregroundColor(Color(nsColor: .secondaryLabelColor))
                 .frame(width: 50, alignment: .leading)
 
             Spacer()
@@ -170,7 +170,7 @@ struct SettingsView: View {
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 12))
-                        .foregroundColor(.white.opacity(0.3))
+                        .foregroundColor(Color(nsColor: .tertiaryLabelColor))
                 }
                 .buttonStyle(.plain)
             }
@@ -179,7 +179,7 @@ struct SettingsView: View {
         .padding(.vertical, 6)
         .background(
             RoundedRectangle(cornerRadius: 6)
-                .fill(Color.white.opacity(0.04))
+                .fill(Color(nsColor: .controlBackgroundColor).opacity(0.8))
         )
     }
 
@@ -189,7 +189,7 @@ struct SettingsView: View {
         HStack {
             Text(label)
                 .font(.system(size: 13))
-                .foregroundColor(.white.opacity(0.7))
+                .foregroundColor(Color(nsColor: .secondaryLabelColor))
             Spacer()
             content()
         }
@@ -197,7 +197,7 @@ struct SettingsView: View {
         .padding(.vertical, 10)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(Color.white.opacity(0.06))
+                .fill(Color(nsColor: .controlBackgroundColor).opacity(0.9))
         )
         .padding(.horizontal, 8)
     }
@@ -206,14 +206,14 @@ struct SettingsView: View {
         HStack(spacing: 3) {
             Text(key)
                 .font(.system(size: 10, weight: .semibold, design: .rounded))
-                .foregroundColor(.white.opacity(0.7))
+                .foregroundColor(Color(nsColor: .labelColor))
                 .padding(.horizontal, 4)
                 .padding(.vertical, 1)
-                .background(Color.white.opacity(0.1))
+                .background(Color(nsColor: .controlBackgroundColor).opacity(0.9))
                 .cornerRadius(3)
             Text(action)
                 .font(.system(size: 10))
-                .foregroundColor(.white.opacity(0.35))
+                .foregroundColor(Color(nsColor: .tertiaryLabelColor))
         }
     }
 }
@@ -230,7 +230,7 @@ struct HotkeyRecorderButton: View {
             HStack(spacing: 4) {
                 Text("Type shortcut...")
                     .font(.system(size: 12))
-                    .foregroundColor(.white.opacity(0.5))
+                    .foregroundColor(Color(nsColor: .secondaryLabelColor))
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
@@ -248,14 +248,14 @@ struct HotkeyRecorderButton: View {
             } label: {
                 Text(displayString)
                     .font(.system(size: 12, weight: .medium, design: .rounded))
-                    .foregroundColor(.white.opacity(0.8))
+                    .foregroundColor(Color(nsColor: .labelColor))
             }
             .buttonStyle(.plain)
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
             .background(
                 RoundedRectangle(cornerRadius: 6)
-                    .fill(Color.white.opacity(0.1))
+                    .fill(Color(nsColor: .controlBackgroundColor).opacity(0.95))
             )
         }
     }
@@ -342,11 +342,11 @@ struct ModifierRecorderButton: View {
                 if !liveDisplayString.isEmpty {
                     Text(liveDisplayString)
                         .font(.system(size: 12, weight: .medium, design: .rounded))
-                        .foregroundColor(.white.opacity(0.9))
+                        .foregroundColor(Color(nsColor: .labelColor))
                 } else {
                     Text("Press modifiers, then release...")
                         .font(.system(size: 12))
-                        .foregroundColor(.white.opacity(0.5))
+                        .foregroundColor(Color(nsColor: .secondaryLabelColor))
                 }
             }
             .padding(.horizontal, 10)
@@ -372,14 +372,14 @@ struct ModifierRecorderButton: View {
             } label: {
                 Text(displayString)
                     .font(.system(size: 12, weight: .medium, design: .rounded))
-                    .foregroundColor(.white.opacity(0.8))
+                    .foregroundColor(Color(nsColor: .labelColor))
             }
             .buttonStyle(.plain)
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
             .background(
                 RoundedRectangle(cornerRadius: 6)
-                    .fill(Color.white.opacity(0.1))
+                    .fill(Color(nsColor: .controlBackgroundColor).opacity(0.95))
             )
         }
     }

@@ -52,7 +52,7 @@ struct SpearoDialogView: View {
             if let msg = statusMessage {
                 Text(msg)
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.white.opacity(0.5))
+                    .foregroundColor(Color(nsColor: .secondaryLabelColor))
                     .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 16)
                 .padding(.bottom, 14)
@@ -90,14 +90,14 @@ struct SpearoDialogView: View {
         HStack(spacing: 3) {
             Text(key)
                 .font(.system(size: 10, weight: .semibold, design: .rounded))
-                .foregroundColor(.white.opacity(0.7))
+                .foregroundColor(Color(nsColor: .labelColor))
                 .padding(.horizontal, 4)
                 .padding(.vertical, 1)
-                .background(Color.white.opacity(0.1))
+                .background(Color(nsColor: .controlBackgroundColor).opacity(0.9))
                 .cornerRadius(3)
             Text(action)
                 .font(.system(size: 10))
-                .foregroundColor(.white.opacity(0.35))
+                .foregroundColor(Color(nsColor: .tertiaryLabelColor))
         }
     }
 
@@ -329,14 +329,14 @@ struct SlotRow: View {
             // Hotkey badge
             Text(slotLabel)
                 .font(.system(size: 11, weight: .bold, design: .rounded))
-                .foregroundColor(isCursor ? .white : .white.opacity(0.45))
+                .foregroundColor(isCursor ? .white : Color(nsColor: .secondaryLabelColor))
                 .lineLimit(1)
                 .fixedSize()
                 .padding(.horizontal, 5)
                 .frame(minWidth: 28, minHeight: 22, maxHeight: 22)
                 .background(
                     RoundedRectangle(cornerRadius: 5)
-                        .fill(isCursor ? Color.accentColor.opacity(0.6) : Color.white.opacity(0.08))
+                        .fill(isCursor ? Color.accentColor.opacity(0.85) : Color(nsColor: .controlBackgroundColor).opacity(0.95))
                 )
 
             // App icon
@@ -346,7 +346,7 @@ struct SlotRow: View {
             // App name
             Text(slot?.name ?? "Empty")
                 .font(.system(size: 14, weight: slot != nil ? .medium : .regular))
-                .foregroundColor(slot != nil ? .white.opacity(0.9) : .white.opacity(0.25))
+                .foregroundColor(slot != nil ? Color(nsColor: .labelColor) : Color(nsColor: .tertiaryLabelColor))
 
             Spacer()
         }
@@ -363,7 +363,7 @@ struct SlotRow: View {
         if isInSelection {
             return Color.accentColor.opacity(0.2)
         } else if isCursor {
-            return Color.white.opacity(0.12)
+            return Color(nsColor: .controlBackgroundColor).opacity(0.95)
         } else {
             return Color.clear
         }
@@ -380,12 +380,12 @@ struct SlotRow: View {
             } else {
                 Image(systemName: "app")
                     .font(.system(size: 18))
-                    .foregroundColor(.white.opacity(0.4))
+                    .foregroundColor(Color(nsColor: .secondaryLabelColor))
             }
         } else {
             Image(systemName: "circle.dashed")
                 .font(.system(size: 16))
-                .foregroundColor(.white.opacity(0.15))
+                .foregroundColor(Color(nsColor: .tertiaryLabelColor))
         }
     }
 }

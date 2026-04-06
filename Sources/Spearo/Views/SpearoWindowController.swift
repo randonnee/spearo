@@ -81,7 +81,7 @@ class SpearoWindowController: NSWindowController {
 
         // Vibrancy background view
         let visualEffect = NSVisualEffectView()
-        visualEffect.material = .hudWindow
+        visualEffect.material = .popover
         visualEffect.state = .active
         visualEffect.blendingMode = .behindWindow
         visualEffect.wantsLayer = true
