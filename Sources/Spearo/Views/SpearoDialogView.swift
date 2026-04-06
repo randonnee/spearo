@@ -393,19 +393,27 @@ struct SlotRow: View {
 // MARK: - Key Event Handler
 
 struct KeyEventHandlingView: NSViewRepresentable {
+    var isActive: Bool = true
     let onKeyDown: (NSEvent) -> Bool
 
     func makeNSView(context: Context) -> KeyCaptureView {
         let view = KeyCaptureView()
         view.onKeyDown = onKeyDown
-        DispatchQueue.main.async {
-            view.window?.makeFirstResponder(view)
+        if isActive {
+            DispatchQueue.main.async {
+                view.window?.makeFirstResponder(view)
+            }
         }
         return view
     }
 
     func updateNSView(_ nsView: KeyCaptureView, context: Context) {
         nsView.onKeyDown = onKeyDown
+        if isActive {
+            DispatchQueue.main.async {
+                nsView.window?.makeFirstResponder(nsView)
+            }
+        }
     }
 }
 

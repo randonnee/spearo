@@ -4,9 +4,14 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var settings: HotkeySettings
     @State private var isRecordingDialog = false
+    @State private var isRecordingAddApp = false
     @State private var isRecordingModifier = false
     @State private var recordingSlotIndex: Int? = nil
     var onBack: () -> Void
+
+    private var isAnyRecording: Bool {
+        isRecordingDialog || isRecordingAddApp || isRecordingModifier || recordingSlotIndex != nil
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -31,6 +36,19 @@ struct SettingsView: View {
                     ),
                     onRecord: { keyCode, modifiers in
                         settings.update(keyCode: keyCode, modifiers: modifiers)
+                    }
+                )
+            }
+
+            Spacer().frame(height: 6)
+
+            // Add App hotkey
+            settingsRow(label: "Add App") {
+                HotkeyRecorderButton(
+                    displayString: settings.addAppDisplayString,
+                    isRecording: $isRecordingAddApp,
+                    onRecord: { keyCode, modifiers in
+                        settings.updateAddApp(keyCode: keyCode, modifiers: modifiers)
                     }
                 )
             }
@@ -73,14 +91,19 @@ struct SettingsView: View {
             .padding(.bottom, 14)
         }
         .background(Color.clear)
-        .background(KeyEventHandlingView(onKeyDown: { event in
+        .background(KeyEventHandlingView(isActive: !isAnyRecording, onKeyDown: { event in
             let key = event.charactersIgnoringModifiers ?? ""
-            if key == "\u{1B}" && !isRecordingDialog && !isRecordingModifier && recordingSlotIndex == nil {
+            if key == "\u{1B}" && !isRecordingDialog && !isRecordingAddApp && !isRecordingModifier && recordingSlotIndex == nil {
                 onBack()
                 return true
             }
             return false
         }))
+        .onChange(of: isRecordingDialog) { _ in HotkeyManager.setSuspended(isAnyRecording) }
+        .onChange(of: isRecordingAddApp) { _ in HotkeyManager.setSuspended(isAnyRecording) }
+        .onChange(of: isRecordingModifier) { _ in HotkeyManager.setSuspended(isAnyRecording) }
+        .onChange(of: recordingSlotIndex) { _ in HotkeyManager.setSuspended(isAnyRecording) }
+        .onDisappear { HotkeyManager.setSuspended(false) }
     }
 
     // MARK: - Mode picker

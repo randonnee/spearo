@@ -28,13 +28,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Re-register the dialog hotkey when settings change
         hotkeySettings.onChange = { [weak self] in
             self?.registerDialogHotkey()
-            self?.refreshMenu()
+        }
+
+        // Re-register the add-app hotkey when settings change
+        hotkeySettings.onAddAppChanged = { [weak self] in
+            self?.registerAddAppHotkey()
         }
 
         // Re-register slot hotkeys when slot settings change
         hotkeySettings.onSlotHotkeysChanged = { [weak self] in
             self?.registerSlotHotkeys()
-            self?.refreshMenu()
         }
     }
 
@@ -51,54 +54,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "Spearo", action: nil, keyEquivalent: ""))
-        menu.addItem(NSMenuItem.separator())
-
-        let addItem = NSMenuItem(title: "Add Current App (Ctrl+Shift+A)", action: #selector(addCurrentApp), keyEquivalent: "")
-        addItem.target = self
-        menu.addItem(addItem)
-
-        let dialogLabel = "Open Spearo (\(hotkeySettings.displayString))"
-        let dialogItem = NSMenuItem(title: dialogLabel, action: #selector(openSpearoDialog), keyEquivalent: "")
-        dialogItem.target = self
-        menu.addItem(dialogItem)
-
-        menu.addItem(NSMenuItem.separator())
-
-        // Show current assignments with correct hotkey labels
-        for i in 0..<spearoManager.visibleSlotCount {
-            let slot = spearoManager.slots[i]
-            let appLabel = slot != nil ? slot!.name : "(empty)"
-            let hotkeyLabel = hotkeySettings.slotLabel(i)
-            let item = NSMenuItem(title: "\(hotkeyLabel): \(appLabel)", action: nil, keyEquivalent: "")
-            menu.addItem(item)
-        }
-
-        menu.addItem(NSMenuItem.separator())
-
-        let settingsItem = NSMenuItem(title: "Settings...", action: #selector(openSettings), keyEquivalent: ",")
-        settingsItem.target = self
-        menu.addItem(settingsItem)
-
-        let quitItem = NSMenuItem(title: "Quit Spearo", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
-        menu.addItem(quitItem)
-
+        menu.delegate = self
         statusItem.menu = menu
-    }
-
-    func refreshMenu() {
-        setupMenuBar()
     }
 
     private func setupHotkeys() {
         // Slot hotkeys (F1-F12, Modifier+Number, or custom)
         registerSlotHotkeys()
 
-        // Ctrl+Shift+A to add current app
-        let ctrlShift: UInt32 = UInt32(controlKey | shiftKey)
-        hotkeyManager.register(name: "addApp", keyCode: UInt32(kVK_ANSI_A), modifiers: ctrlShift) { [weak self] in
-            self?.addCurrentApp()
-        }
+        // Configurable add-app hotkey
+        registerAddAppHotkey()
 
         // Configurable dialog hotkey
         registerDialogHotkey()
@@ -132,6 +97,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    private func registerAddAppHotkey() {
+        hotkeyManager.register(
+            name: "addApp",
+            keyCode: hotkeySettings.addAppKeyCode,
+            modifiers: hotkeySettings.addAppModifiers
+        ) { [weak self] in
+            self?.addCurrentApp()
+        }
+    }
+
     private func switchSlot(_ index: Int) {
         // Dismiss the dialog first so it doesn't fight for focus
         dismissDialog()
@@ -140,7 +115,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func addCurrentApp() {
         spearoManager.addCurrentApp()
-        refreshMenu()
     }
 
     @objc private func openSpearoDialog() {
@@ -149,7 +123,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         spearoWindowController = SpearoWindowController(manager: spearoManager) { [weak self] in
-            self?.refreshMenu()
             self?.spearoWindowController = nil
         }
     }
@@ -159,7 +132,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             controller.navigation.page = .settings
         } else {
             spearoWindowController = SpearoWindowController(manager: spearoManager) { [weak self] in
-                self?.refreshMenu()
                 self?.spearoWindowController = nil
             }
             spearoWindowController?.navigation.page = .settings
@@ -170,5 +142,45 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard let controller = spearoWindowController else { return }
         spearoWindowController = nil
         controller.dismiss()
+    }
+}
+
+// MARK: - NSMenuDelegate
+
+extension AppDelegate: NSMenuDelegate {
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        menu.removeAllItems()
+
+        menu.addItem(NSMenuItem(title: "Spearo", action: nil, keyEquivalent: ""))
+        menu.addItem(NSMenuItem.separator())
+
+        let addLabel = "Add Current App (\(hotkeySettings.addAppDisplayString))"
+        let addItem = NSMenuItem(title: addLabel, action: #selector(addCurrentApp), keyEquivalent: "")
+        addItem.target = self
+        menu.addItem(addItem)
+
+        let dialogLabel = "Open Spearo (\(hotkeySettings.displayString))"
+        let dialogItem = NSMenuItem(title: dialogLabel, action: #selector(openSpearoDialog), keyEquivalent: "")
+        dialogItem.target = self
+        menu.addItem(dialogItem)
+
+        menu.addItem(NSMenuItem.separator())
+
+        for i in 0..<spearoManager.visibleSlotCount {
+            let slot = spearoManager.slots[i]
+            let appLabel = slot != nil ? slot!.name : "(empty)"
+            let hotkeyLabel = hotkeySettings.slotLabel(i)
+            let item = NSMenuItem(title: "\(hotkeyLabel): \(appLabel)", action: nil, keyEquivalent: "")
+            menu.addItem(item)
+        }
+
+        menu.addItem(NSMenuItem.separator())
+
+        let settingsItem = NSMenuItem(title: "Settings...", action: #selector(openSettings), keyEquivalent: ",")
+        settingsItem.target = self
+        menu.addItem(settingsItem)
+
+        let quitItem = NSMenuItem(title: "Quit Spearo", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        menu.addItem(quitItem)
     }
 }

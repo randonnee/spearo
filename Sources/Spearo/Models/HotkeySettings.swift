@@ -43,6 +43,19 @@ class HotkeySettings: ObservableObject {
         didSet { saveDialog() }
     }
 
+    // MARK: - Add App hotkey
+
+    private let addAppKeyCodeKey = "spearo.addAppHotkey.keyCode"
+    private let addAppModifiersKey = "spearo.addAppHotkey.modifiers"
+
+    @Published var addAppKeyCode: UInt32 {
+        didSet { saveAddApp() }
+    }
+
+    @Published var addAppModifiers: UInt32 {
+        didSet { saveAddApp() }
+    }
+
     // MARK: - Slot hotkey mode
 
     private let slotModeKey = "spearo.slotHotkeyMode"
@@ -74,6 +87,9 @@ class HotkeySettings: ObservableObject {
     /// Called after the dialog hotkey is changed.
     var onChange: (() -> Void)?
 
+    /// Called after the add-app hotkey is changed.
+    var onAddAppChanged: (() -> Void)?
+
     /// Called after slot hotkey configuration changes.
     var onSlotHotkeysChanged: (() -> Void)?
 
@@ -95,6 +111,15 @@ class HotkeySettings: ObservableObject {
         } else {
             keyCode = UInt32(kVK_ANSI_D)
             modifiers = UInt32(controlKey | shiftKey)
+        }
+
+        // Add App hotkey
+        if defaults.object(forKey: addAppKeyCodeKey) != nil {
+            addAppKeyCode = UInt32(defaults.integer(forKey: addAppKeyCodeKey))
+            addAppModifiers = UInt32(defaults.integer(forKey: addAppModifiersKey))
+        } else {
+            addAppKeyCode = UInt32(kVK_ANSI_A)
+            addAppModifiers = UInt32(controlKey | shiftKey)
         }
 
         // Slot mode
@@ -148,6 +173,24 @@ class HotkeySettings: ObservableObject {
         let defaults = UserDefaults.standard
         defaults.set(Int(keyCode), forKey: dialogKeyCodeKey)
         defaults.set(Int(modifiers), forKey: dialogModifiersKey)
+    }
+
+    // MARK: - Add App hotkey
+
+    func updateAddApp(keyCode: UInt32, modifiers: UInt32) {
+        self.addAppKeyCode = keyCode
+        self.addAppModifiers = modifiers
+        onAddAppChanged?()
+    }
+
+    var addAppDisplayString: String {
+        KeyBinding(keyCode: addAppKeyCode, modifiers: addAppModifiers).displayString
+    }
+
+    private func saveAddApp() {
+        let defaults = UserDefaults.standard
+        defaults.set(Int(addAppKeyCode), forKey: addAppKeyCodeKey)
+        defaults.set(Int(addAppModifiers), forKey: addAppModifiersKey)
     }
 
     // MARK: - Slot hotkey settings

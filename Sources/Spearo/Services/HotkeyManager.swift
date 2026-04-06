@@ -9,6 +9,14 @@ class HotkeyManager {
     /// Map from a caller-defined name to the registered hotkey ID, for re-registration.
     private var namedHotkeys: [String: UInt32] = [:]
 
+    /// When true, hotkey handlers are silently ignored (e.g. during recording).
+    var suspended = false
+
+    /// Suspend/resume hotkey handling from anywhere.
+    static func setSuspended(_ value: Bool) {
+        instance?.suspended = value
+    }
+
     private static var instance: HotkeyManager?
 
     init() {
@@ -88,7 +96,8 @@ class HotkeyManager {
             guard status == noErr else { return status }
 
             DispatchQueue.main.async {
-                HotkeyManager.instance?.handlers[hotkeyID.id]?()
+                guard let mgr = HotkeyManager.instance, !mgr.suspended else { return }
+                mgr.handlers[hotkeyID.id]?()
             }
             return noErr
         }
