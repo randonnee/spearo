@@ -47,6 +47,7 @@ class HotkeySettings: ObservableObject {
 
     private let slotModeKey = "spearo.slotHotkeyMode"
     private let slotModifierKey = "spearo.slotModifier"
+    private let slotModifierOrderKey = "spearo.slotModifierOrder"
     private let slotCustomBindingsKey = "spearo.slotCustomBindings"
 
     @Published var slotMode: SlotHotkeyMode {
@@ -55,6 +56,11 @@ class HotkeySettings: ObservableObject {
 
     /// Modifier mask used in .modifierNumber mode (default: Ctrl)
     @Published var slotModifier: UInt32 {
+        didSet { saveSlotSettings() }
+    }
+
+    /// Ordered modifier flags for display (preserves user press order)
+    @Published var slotModifierOrder: [UInt32] {
         didSet { saveSlotSettings() }
     }
 
@@ -70,6 +76,12 @@ class HotkeySettings: ObservableObject {
 
     /// Called after slot hotkey configuration changes.
     var onSlotHotkeysChanged: (() -> Void)?
+
+    /// Derive an ordered modifier list from a bitmask in canonical order.
+    static func defaultOrder(for mods: UInt32) -> [UInt32] {
+        let all: [UInt32] = [UInt32(controlKey), UInt32(optionKey), UInt32(shiftKey), UInt32(cmdKey)]
+        return all.filter { mods & $0 != 0 }
+    }
 
     // MARK: - Init
 
@@ -94,10 +106,20 @@ class HotkeySettings: ObservableObject {
         }
 
         // Slot modifier for modifierNumber mode
+        let loadedModifier: UInt32
         if defaults.object(forKey: slotModifierKey) != nil {
-            slotModifier = UInt32(defaults.integer(forKey: slotModifierKey))
+            loadedModifier = UInt32(defaults.integer(forKey: slotModifierKey))
         } else {
-            slotModifier = UInt32(controlKey)
+            loadedModifier = UInt32(controlKey)
+        }
+        slotModifier = loadedModifier
+
+        // Slot modifier order (press order)
+        if let orderData = defaults.array(forKey: slotModifierOrderKey) as? [Int] {
+            slotModifierOrder = orderData.map { UInt32($0) }
+        } else {
+            // Derive from slotModifier in canonical order as fallback
+            slotModifierOrder = Self.defaultOrder(for: loadedModifier)
         }
 
         // Custom bindings
@@ -135,9 +157,15 @@ class HotkeySettings: ObservableObject {
         onSlotHotkeysChanged?()
     }
 
-    func updateSlotModifier(_ modifier: UInt32) {
+    func updateSlotModifier(_ modifier: UInt32, order: [UInt32]) {
         slotModifier = modifier
+        slotModifierOrder = order
         onSlotHotkeysChanged?()
+    }
+
+    /// Display string for the slot modifier, using preserved press order.
+    var slotModifierDisplayString: String {
+        orderedModifierDisplayString(slotModifierOrder)
     }
 
     func updateCustomBinding(index: Int, keyCode: UInt32, modifiers: UInt32) {
@@ -156,6 +184,7 @@ class HotkeySettings: ObservableObject {
         let defaults = UserDefaults.standard
         defaults.set(slotMode.rawValue, forKey: slotModeKey)
         defaults.set(Int(slotModifier), forKey: slotModifierKey)
+        defaults.set(slotModifierOrder.map { Int($0) }, forKey: slotModifierOrderKey)
         if let data = try? JSONEncoder().encode(customBindings) {
             defaults.set(data, forKey: slotCustomBindingsKey)
         }
@@ -242,7 +271,7 @@ func carbonModifiers(from flags: NSEvent.ModifierFlags) -> UInt32 {
     return mods
 }
 
-/// Human-readable label for a Carbon modifier mask.
+/// Human-readable label for a Carbon modifier mask (canonical order).
 func modifierDisplayString(_ mods: UInt32) -> String {
     var parts: [String] = []
     if mods & UInt32(controlKey) != 0 { parts.append("Ctrl") }
@@ -250,4 +279,15 @@ func modifierDisplayString(_ mods: UInt32) -> String {
     if mods & UInt32(shiftKey) != 0 { parts.append("Shift") }
     if mods & UInt32(cmdKey) != 0 { parts.append("Cmd") }
     return parts.joined(separator: "+")
+}
+
+/// Human-readable label for modifiers in a specific order.
+func orderedModifierDisplayString(_ order: [UInt32]) -> String {
+    let labels: [UInt32: String] = [
+        UInt32(controlKey): "Ctrl",
+        UInt32(optionKey): "Opt",
+        UInt32(shiftKey): "Shift",
+        UInt32(cmdKey): "Cmd",
+    ]
+    return order.compactMap { labels[$0] }.joined(separator: "+")
 }
