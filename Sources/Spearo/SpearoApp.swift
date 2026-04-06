@@ -5,7 +5,9 @@ struct SpearoApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var body: some Scene {
-        // Menu bar only — no main window.
-        // Settings are accessible inside the Spearo dialog (Cmd+,).
+        // SwiftUI still requires a scene even though the app is menu-bar only.
+        Settings {
+            EmptyView()
+        }
     }
 }

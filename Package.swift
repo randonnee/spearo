@@ -3,12 +3,12 @@ import PackageDescription
 
 let package = Package(
     name: "Spearo",
-    platforms: [.macOS(.v13)],
+    platforms: [.macOS(.v14)],
     targets: [
         .executableTarget(
             name: "Spearo",
             path: "Sources/Spearo",
-            exclude: ["Info.plist", "Assets.xcassets"],
+            exclude: ["Info.plist"],
             resources: [.copy("Resources/spear-tip.svg")]
         )
     ]
