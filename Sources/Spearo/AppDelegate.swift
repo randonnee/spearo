@@ -122,26 +122,48 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             dismissDialog()
             return
         }
-        spearoWindowController = SpearoWindowController(manager: spearoManager) { [weak self] in
-            self?.spearoWindowController = nil
-        }
-    }
-
-    @objc private func openSettings() {
-        if let controller = spearoWindowController {
-            controller.navigation.page = .settings
-        } else {
-            spearoWindowController = SpearoWindowController(manager: spearoManager) { [weak self] in
-                self?.spearoWindowController = nil
-            }
-            spearoWindowController?.navigation.page = .settings
-        }
+        spearoWindowController = makeDialogController()
     }
 
     private func dismissDialog() {
         guard let controller = spearoWindowController else { return }
         spearoWindowController = nil
         controller.dismiss()
+    }
+
+    private func makeDialogController() -> SpearoWindowController {
+        SpearoWindowController(
+            manager: spearoManager,
+            onClose: { [weak self] in
+                self?.spearoWindowController = nil
+            }
+        )
+    }
+
+    private func makeSettingsMenuItem() -> NSMenuItem {
+        let item = NSMenuItem()
+        let hostingView = NSHostingView(rootView: SettingsMenuItemView())
+        hostingView.frame = NSRect(origin: .zero, size: hostingView.fittingSize)
+        item.view = hostingView
+        return item
+    }
+}
+
+private struct SettingsMenuItemView: View {
+    var body: some View {
+        SettingsLink {
+            HStack {
+                Text("Settings...")
+                Spacer()
+                Text("⌘,")
+                    .foregroundColor(Color(nsColor: .secondaryLabelColor))
+            }
+            .font(.system(size: NSFont.menuFont(ofSize: 0).pointSize))
+            .frame(width: 200, alignment: .leading)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -176,9 +198,7 @@ extension AppDelegate: NSMenuDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
-        let settingsItem = NSMenuItem(title: "Settings...", action: #selector(openSettings), keyEquivalent: ",")
-        settingsItem.target = self
-        menu.addItem(settingsItem)
+        menu.addItem(makeSettingsMenuItem())
 
         let quitItem = NSMenuItem(title: "Quit Spearo", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         menu.addItem(quitItem)

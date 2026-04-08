@@ -3,7 +3,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var settings: HotkeySettings
-    @Environment(\.dialogClose) private var onClose
+    @Environment(\.dismiss) private var dismiss
     @State private var isRecordingDialog = false
     @State private var isRecordingAddApp = false
     @State private var isRecordingModifier = false
@@ -94,7 +94,7 @@ struct SettingsView: View {
         .background(KeyEventHandlingView(isActive: !isAnyRecording, onKeyDown: { event in
             let key = event.charactersIgnoringModifiers ?? ""
             if key == "\u{1B}" && !isRecordingDialog && !isRecordingAddApp && !isRecordingModifier && recordingSlotIndex == nil {
-                onClose()
+                dismiss()
                 return true
             }
             return false

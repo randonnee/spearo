@@ -8,7 +8,6 @@ enum SelectMode {
 struct SpearoDialogView: View {
     @ObservedObject var manager: SpearoManager
     @Environment(\.dialogClose) private var onClose
-    var onSettings: () -> Void
 
     @State private var selectedIndex: Int = 0
     @State private var commandBuffer: String = ""
@@ -83,7 +82,18 @@ struct SpearoDialogView: View {
             }
         }
         .background(Color.clear)
+        .overlay(settingsShortcutLink)
         .background(KeyEventHandlingView(onKeyDown: handleKey))
+    }
+
+    private var settingsShortcutLink: some View {
+        SettingsLink {
+            Text("Settings")
+        }
+        .keyboardShortcut(",", modifiers: .command)
+        .frame(width: 0, height: 0)
+        .opacity(0.001)
+        .accessibilityHidden(true)
     }
 
     private func hintLabel(_ key: String, _ action: String) -> some View {
@@ -298,8 +308,10 @@ struct SpearoDialogView: View {
         case ",":
             if event.modifierFlags.contains(.command) {
                 commandBuffer = ""
-                onSettings()
-                return true
+                DispatchQueue.main.async {
+                    onClose()
+                }
+                return false
             }
             return false
 

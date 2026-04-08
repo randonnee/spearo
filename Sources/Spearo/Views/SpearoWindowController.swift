@@ -14,33 +14,14 @@ extension EnvironmentValues {
     }
 }
 
-enum DialogPage {
-    case slots
-    case settings
-}
-
-class DialogNavigation: ObservableObject {
-    @Published var page: DialogPage = .slots
-}
-
 struct SpearoRootView: View {
     @ObservedObject var manager: SpearoManager
-    @ObservedObject var hotkeySettings: HotkeySettings
-    @ObservedObject var navigation: DialogNavigation
     var onClose: () -> Void
 
     var body: some View {
-        Group {
-            switch navigation.page {
-            case .slots:
-                SpearoDialogView(
-                    manager: manager,
-                    onSettings: { navigation.page = .settings }
-                )
-            case .settings:
-                SettingsView(settings: hotkeySettings)
-            }
-        }
+        SpearoDialogView(
+            manager: manager
+        )
         .environment(\.dialogClose, onClose)
     }
 }
@@ -57,7 +38,6 @@ class SpearoWindowController: NSWindowController {
     private var workspaceObserver: Any?
     private var isDismissing = false
     private var previousApp: NSRunningApplication?
-    let navigation = DialogNavigation()
 
     init(manager: SpearoManager, onClose: @escaping () -> Void) {
         self.manager = manager
@@ -95,8 +75,6 @@ class SpearoWindowController: NSWindowController {
         // Wire up the root view that switches between slots and settings
         let contentView = SpearoRootView(
             manager: manager,
-            hotkeySettings: HotkeySettings.shared,
-            navigation: navigation,
             onClose: { [weak self] in
                 self?.dismiss()
             }
@@ -157,7 +135,7 @@ class SpearoWindowController: NSWindowController {
         fatalError("init(coder:) has not been implemented")
     }
 
-    func dismiss() {
+    func dismiss(restorePreviousApp: Bool = true) {
         guard !isDismissing else { return }
         isDismissing = true
 
@@ -172,7 +150,7 @@ class SpearoWindowController: NSWindowController {
         window?.orderOut(nil)
 
         // Restore focus to the app that was active before the dialog opened
-        if let app = previousApp, !app.isTerminated {
+        if restorePreviousApp, let app = previousApp, !app.isTerminated {
             app.activate()
         }
 
@@ -192,6 +170,10 @@ class SpearoWindowController: NSWindowController {
 }
 
 extension SpearoWindowController: NSWindowDelegate {
+    func windowDidResignKey(_ notification: Notification) {
+        dismiss(restorePreviousApp: false)
+    }
+
     func windowWillClose(_ notification: Notification) {
         dismiss()
     }
