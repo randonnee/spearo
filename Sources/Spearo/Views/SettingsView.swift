@@ -3,7 +3,6 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var settings: HotkeySettings
-    @Environment(\.dismiss) private var dismiss
     @State private var isRecordingDialog = false
     @State private var isRecordingAddApp = false
     @State private var isRecordingModifier = false
@@ -15,17 +14,6 @@ struct SettingsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header
-            HStack {
-                Text("Settings")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(Color(nsColor: .labelColor))
-                Spacer()
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
-            .padding(.bottom, 12)
-
             // Dialog hotkey
             settingsRow(label: "Open Dialog") {
                 HotkeyRecorderButton(
@@ -79,26 +67,9 @@ struct SettingsView: View {
                 Spacer().frame(height: 8)
                 customBindingsList
             }
-
-            Spacer().frame(height: 16)
-
-            // Hint bar
-            HStack(spacing: 16) {
-                hintLabel("esc", "close")
-            }
-            .frame(maxWidth: .infinity, alignment: .center)
-            .padding(.horizontal, 16)
-            .padding(.bottom, 14)
         }
         .background(Color.clear)
-        .background(KeyEventHandlingView(isActive: !isAnyRecording, onKeyDown: { event in
-            let key = event.charactersIgnoringModifiers ?? ""
-            if key == "\u{1B}" && !isRecordingDialog && !isRecordingAddApp && !isRecordingModifier && recordingSlotIndex == nil {
-                dismiss()
-                return true
-            }
-            return false
-        }))
+        .padding(.vertical, 8)
         .onChange(of: isRecordingDialog) { HotkeyManager.setSuspended(isAnyRecording) }
         .onChange(of: isRecordingAddApp) { HotkeyManager.setSuspended(isAnyRecording) }
         .onChange(of: isRecordingModifier) { HotkeyManager.setSuspended(isAnyRecording) }
@@ -206,21 +177,6 @@ struct SettingsView: View {
                 .fill(Color(nsColor: .controlBackgroundColor).opacity(0.9))
         )
         .padding(.horizontal, 8)
-    }
-
-    private func hintLabel(_ key: String, _ action: String) -> some View {
-        HStack(spacing: 3) {
-            Text(key)
-                .font(.system(size: 10, weight: .semibold, design: .rounded))
-                .foregroundColor(Color(nsColor: .labelColor))
-                .padding(.horizontal, 4)
-                .padding(.vertical, 1)
-                .background(Color(nsColor: .controlBackgroundColor).opacity(0.9))
-                .cornerRadius(3)
-            Text(action)
-                .font(.system(size: 10))
-                .foregroundColor(Color(nsColor: .tertiaryLabelColor))
-        }
     }
 }
 
