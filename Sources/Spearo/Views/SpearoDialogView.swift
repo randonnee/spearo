@@ -161,24 +161,20 @@ struct SpearoDialogView: View {
     private func handleKey(_ event: NSEvent) -> Bool {
         let key = event.charactersIgnoringModifiers ?? ""
         let maxIndex = manager.visibleSlotCount - 1
+        let downArrow = String(Character(UnicodeScalar(NSDownArrowFunctionKey)!))
+        let upArrow = String(Character(UnicodeScalar(NSUpArrowFunctionKey)!))
 
         // Handle select mode keys first
         if selectMode != .none {
             switch key {
-            case "j":
+            case "j", downArrow:
                 commandBuffer = ""
-                // Extend selection down
-            if selectMode == .visual {
                 selectedIndex = min(selectedIndex + 1, maxIndex)
-            }
-            return true
+                return true
 
-        case "k":
-            commandBuffer = ""
-            // Extend selection up
-            if selectMode == .visual {
+            case "k", upArrow:
+                commandBuffer = ""
                 selectedIndex = max(selectedIndex - 1, 0)
-            }
                 return true
 
             case "J":
@@ -218,12 +214,12 @@ struct SpearoDialogView: View {
 
         // Normal mode
         switch key {
-        case "j":
+        case "j", downArrow:
             commandBuffer = ""
             selectedIndex = min(selectedIndex + 1, maxIndex)
             return true
 
-        case "k":
+        case "k", upArrow:
             commandBuffer = ""
             selectedIndex = max(selectedIndex - 1, 0)
             return true
