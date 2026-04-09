@@ -7,10 +7,12 @@ class SpearoManager: ObservableObject {
 
     @Published var slots: [SpearoSlot?] = Array(repeating: nil, count: maxSlots)
 
-    /// Number of slots to display: occupied count + 1 empty slot (minimum 1, max 12)
+    /// Number of slots to display: up to the last occupied slot, with one empty row when all slots are empty.
     var visibleSlotCount: Int {
-        let occupiedCount = slots.filter { $0 != nil }.count
-        return min(occupiedCount + 1, SpearoManager.maxSlots)
+        guard let lastOccupiedIndex = slots.lastIndex(where: { $0 != nil }) else {
+            return 1
+        }
+        return lastOccupiedIndex + 1
     }
 
     private let storageKey = "spearo.slots"
