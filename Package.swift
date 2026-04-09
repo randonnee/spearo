@@ -9,7 +9,10 @@ let package = Package(
             name: "Spearo",
             path: "Sources/Spearo",
             exclude: ["Info.plist"],
-            resources: [.copy("Resources/spear-tip.svg")]
+            resources: [
+                .process("Assets.xcassets"),
+                .copy("Resources/spear-tip.svg")
+            ]
         )
     ]
 )

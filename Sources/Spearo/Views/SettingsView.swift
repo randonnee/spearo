@@ -99,10 +99,10 @@ struct SettingsView: View {
             }
             return false
         }))
-        .onChange(of: isRecordingDialog) { _ in HotkeyManager.setSuspended(isAnyRecording) }
-        .onChange(of: isRecordingAddApp) { _ in HotkeyManager.setSuspended(isAnyRecording) }
-        .onChange(of: isRecordingModifier) { _ in HotkeyManager.setSuspended(isAnyRecording) }
-        .onChange(of: recordingSlotIndex) { _ in HotkeyManager.setSuspended(isAnyRecording) }
+        .onChange(of: isRecordingDialog) { HotkeyManager.setSuspended(isAnyRecording) }
+        .onChange(of: isRecordingAddApp) { HotkeyManager.setSuspended(isAnyRecording) }
+        .onChange(of: isRecordingModifier) { HotkeyManager.setSuspended(isAnyRecording) }
+        .onChange(of: recordingSlotIndex) { HotkeyManager.setSuspended(isAnyRecording) }
         .onDisappear { HotkeyManager.setSuspended(false) }
     }
 

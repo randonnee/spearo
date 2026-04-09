@@ -36,7 +36,7 @@ class SpearoManager: ObservableObject {
         let apps = NSRunningApplication.runningApplications(withBundleIdentifier: slot.bundleIdentifier)
         if let app = apps.first {
             app.unhide()
-            app.activate(options: [.activateIgnoringOtherApps])
+            app.activate()
         } else {
             // App not running — launch it
             if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: slot.bundleIdentifier) {
