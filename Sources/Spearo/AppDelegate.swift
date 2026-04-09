@@ -7,6 +7,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var hotkeyManager: HotkeyManager!
     private var spearoManager: SpearoManager!
     private var spearoWindowController: SpearoWindowController?
+    private var settingsWindowController: SettingsWindowController?
     private let hotkeySettings = HotkeySettings.shared
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -125,6 +126,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         spearoWindowController = makeDialogController()
     }
 
+    @objc private func openSettings() {
+        if let controller = settingsWindowController {
+            controller.showWindow(nil)
+            controller.window?.makeKeyAndOrderFront(nil)
+        } else {
+            settingsWindowController = SettingsWindowController(
+                settings: hotkeySettings,
+                onClose: { [weak self] in
+                    self?.settingsWindowController = nil
+                }
+            )
+            settingsWindowController?.showWindow(nil)
+        }
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
     private func dismissDialog() {
         guard let controller = spearoWindowController else { return }
         spearoWindowController = nil
@@ -140,30 +157,41 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         )
     }
 
-    private func makeSettingsMenuItem() -> NSMenuItem {
-        let item = NSMenuItem()
-        let hostingView = NSHostingView(rootView: SettingsMenuItemView())
-        hostingView.frame = NSRect(origin: .zero, size: hostingView.fittingSize)
-        item.view = hostingView
-        return item
-    }
 }
 
-private struct SettingsMenuItemView: View {
-    var body: some View {
-        SettingsLink {
-            HStack {
-                Text("Settings...")
-                Spacer()
-                Text("⌘,")
-                    .foregroundColor(Color(nsColor: .secondaryLabelColor))
-            }
-            .font(.system(size: NSFont.menuFont(ofSize: 0).pointSize))
-            .frame(width: 200, alignment: .leading)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 4)
-        }
-        .buttonStyle(.plain)
+private final class SettingsWindowController: NSWindowController, NSWindowDelegate {
+    private var onClose: (() -> Void)?
+
+    init(settings: HotkeySettings, onClose: @escaping () -> Void) {
+        self.onClose = onClose
+
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 460, height: 320),
+            styleMask: [.titled, .closable, .miniaturizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "Settings"
+        window.isReleasedWhenClosed = false
+        window.center()
+
+        let contentView = SettingsView(settings: settings)
+            .frame(width: 460)
+            .padding(.vertical, 8)
+        window.contentView = NSHostingView(rootView: contentView)
+
+        super.init(window: window)
+        window.delegate = self
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        let callback = onClose
+        onClose = nil
+        callback?()
     }
 }
 
@@ -198,7 +226,10 @@ extension AppDelegate: NSMenuDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
-        menu.addItem(makeSettingsMenuItem())
+        let settingsItem = NSMenuItem(title: "Settings", action: #selector(openSettings), keyEquivalent: ",")
+        settingsItem.keyEquivalentModifierMask = [.command]
+        settingsItem.target = self
+        menu.addItem(settingsItem)
 
         let quitItem = NSMenuItem(title: "Quit Spearo", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         menu.addItem(quitItem)
