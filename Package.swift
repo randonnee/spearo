@@ -11,7 +11,8 @@ let package = Package(
             exclude: ["Info.plist"],
             resources: [
                 .process("Assets.xcassets"),
-                .copy("Resources/spear-tip.svg")
+                .copy("Resources/spear-tip.svg"),
+                .copy("Resources/AppIcon.icns")
             ]
         )
     ]

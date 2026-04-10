@@ -19,6 +19,9 @@ cp "$BUILD_DIR/$APP_NAME" "$APP_BUNDLE/Contents/MacOS/$APP_NAME"
 # Copy Info.plist
 cp "Sources/Spearo/Info.plist" "$APP_BUNDLE/Contents/Info.plist"
 
+# Copy app icon
+cp "Sources/Spearo/Resources/AppIcon.icns" "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
+
 echo "Build complete: $APP_BUNDLE"
 echo ""
 echo "To install:"
