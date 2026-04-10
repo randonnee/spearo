@@ -11,7 +11,6 @@ struct SpearoDialogView: View {
 
     @State private var selectedIndex: Int = 0
     @State private var commandBuffer: String = ""
-    @State private var yankBuffer: SpearoSlot? = nil
     @State private var statusMessage: String? = nil
     @State private var selectMode: SelectMode = .none
     @State private var visualAnchor: Int = 0  // anchor index for V mode
@@ -69,8 +68,6 @@ struct SpearoDialogView: View {
                 HStack(spacing: 16) {
                     hintLabel("j/k", "move")
                     hintLabel("d", "delete")
-                    hintLabel("x", "cut")
-                    hintLabel("p", "paste")
                     hintLabel("v", "select")
                     hintLabel("\u{23CE}", "switch")
                     hintLabel("\u{2318},", "settings")
@@ -250,43 +247,6 @@ struct SpearoDialogView: View {
             manager.removeSlot(selectedIndex)
             if let d = deleted {
                 flashStatus("Deleted \(d.name)")
-            }
-            return true
-
-        case "y":
-            if commandBuffer == "y" {
-                yankBuffer = manager.slots[selectedIndex]
-                commandBuffer = ""
-                if let y = yankBuffer {
-                    flashStatus("Yanked \(y.name)")
-                }
-            } else {
-                commandBuffer = "y"
-            }
-            return true
-
-        case "p":
-            commandBuffer = ""
-            if let yanked = yankBuffer {
-                let current = manager.slots[selectedIndex]
-                var newSlots = manager.slots
-                newSlots[selectedIndex] = yanked
-                manager.setSlots(newSlots)
-                yankBuffer = current
-                let label = HotkeySettings.shared.slotLabel(selectedIndex)
-                flashStatus("Placed \(yanked.name) at \(label)")
-            } else {
-                flashStatus("Nothing to paste")
-            }
-            return true
-
-        case "x":
-            commandBuffer = ""
-            let deleted = manager.slots[selectedIndex]
-            yankBuffer = deleted
-            manager.removeSlot(selectedIndex)
-            if let d = deleted {
-                flashStatus("Cut \(d.name)")
             }
             return true
 
