@@ -14,13 +14,10 @@ enum SlotHotkeyMode: String, Codable, CaseIterable {
 struct KeyBinding: Codable, Equatable {
     var keyCode: UInt32
     var modifiers: UInt32
+    var modifierOrder: [UInt32]? = nil
 
     var displayString: String {
-        var parts: [String] = []
-        if modifiers & UInt32(controlKey) != 0 { parts.append("Ctrl") }
-        if modifiers & UInt32(optionKey) != 0 { parts.append("Opt") }
-        if modifiers & UInt32(shiftKey) != 0 { parts.append("Shift") }
-        if modifiers & UInt32(cmdKey) != 0 { parts.append("Cmd") }
+        var parts = orderedModifierLabels(modifierOrder, fallbackModifiers: modifiers)
         parts.append(keyCodeToString(keyCode))
         return parts.joined(separator: "+")
     }
@@ -34,6 +31,7 @@ class HotkeySettings: ObservableObject {
 
     private let dialogKeyCodeKey = "spearo.dialogHotkey.keyCode"
     private let dialogModifiersKey = "spearo.dialogHotkey.modifiers"
+    private let dialogModifierOrderKey = "spearo.dialogHotkey.modifierOrder"
 
     @Published var keyCode: UInt32 {
         didSet { saveDialog() }
@@ -43,16 +41,25 @@ class HotkeySettings: ObservableObject {
         didSet { saveDialog() }
     }
 
+    @Published var dialogModifierOrder: [UInt32] {
+        didSet { saveDialog() }
+    }
+
     // MARK: - Add App hotkey
 
     private let addAppKeyCodeKey = "spearo.addAppHotkey.keyCode"
     private let addAppModifiersKey = "spearo.addAppHotkey.modifiers"
+    private let addAppModifierOrderKey = "spearo.addAppHotkey.modifierOrder"
 
     @Published var addAppKeyCode: UInt32 {
         didSet { saveAddApp() }
     }
 
     @Published var addAppModifiers: UInt32 {
+        didSet { saveAddApp() }
+    }
+
+    @Published var addAppModifierOrder: [UInt32] {
         didSet { saveAddApp() }
     }
 
@@ -105,21 +112,39 @@ class HotkeySettings: ObservableObject {
         let defaults = UserDefaults.standard
 
         // Dialog hotkey
+        let loadedDialogKeyCode: UInt32
+        let loadedDialogModifiers: UInt32
         if defaults.object(forKey: dialogKeyCodeKey) != nil {
-            keyCode = UInt32(defaults.integer(forKey: dialogKeyCodeKey))
-            modifiers = UInt32(defaults.integer(forKey: dialogModifiersKey))
+            loadedDialogKeyCode = UInt32(defaults.integer(forKey: dialogKeyCodeKey))
+            loadedDialogModifiers = UInt32(defaults.integer(forKey: dialogModifiersKey))
         } else {
-            keyCode = UInt32(kVK_ANSI_D)
-            modifiers = UInt32(controlKey | shiftKey)
+            loadedDialogKeyCode = UInt32(kVK_ANSI_D)
+            loadedDialogModifiers = UInt32(controlKey | shiftKey)
+        }
+        keyCode = loadedDialogKeyCode
+        modifiers = loadedDialogModifiers
+        if let orderData = defaults.array(forKey: dialogModifierOrderKey) as? [Int] {
+            dialogModifierOrder = orderData.map { UInt32($0) }
+        } else {
+            dialogModifierOrder = Self.defaultOrder(for: loadedDialogModifiers)
         }
 
         // Add App hotkey
+        let loadedAddAppKeyCode: UInt32
+        let loadedAddAppModifiers: UInt32
         if defaults.object(forKey: addAppKeyCodeKey) != nil {
-            addAppKeyCode = UInt32(defaults.integer(forKey: addAppKeyCodeKey))
-            addAppModifiers = UInt32(defaults.integer(forKey: addAppModifiersKey))
+            loadedAddAppKeyCode = UInt32(defaults.integer(forKey: addAppKeyCodeKey))
+            loadedAddAppModifiers = UInt32(defaults.integer(forKey: addAppModifiersKey))
         } else {
-            addAppKeyCode = UInt32(kVK_ANSI_A)
-            addAppModifiers = UInt32(controlKey | shiftKey)
+            loadedAddAppKeyCode = UInt32(kVK_ANSI_A)
+            loadedAddAppModifiers = UInt32(controlKey | shiftKey)
+        }
+        addAppKeyCode = loadedAddAppKeyCode
+        addAppModifiers = loadedAddAppModifiers
+        if let orderData = defaults.array(forKey: addAppModifierOrderKey) as? [Int] {
+            addAppModifierOrder = orderData.map { UInt32($0) }
+        } else {
+            addAppModifierOrder = Self.defaultOrder(for: loadedAddAppModifiers)
         }
 
         // Slot mode
@@ -159,38 +184,42 @@ class HotkeySettings: ObservableObject {
 
     // MARK: - Dialog hotkey
 
-    func update(keyCode: UInt32, modifiers: UInt32) {
+    func update(keyCode: UInt32, modifiers: UInt32, order: [UInt32]? = nil) {
         self.keyCode = keyCode
         self.modifiers = modifiers
+        dialogModifierOrder = order ?? Self.defaultOrder(for: modifiers)
         onChange?()
     }
 
     var displayString: String {
-        KeyBinding(keyCode: keyCode, modifiers: modifiers).displayString
+        KeyBinding(keyCode: keyCode, modifiers: modifiers, modifierOrder: dialogModifierOrder).displayString
     }
 
     private func saveDialog() {
         let defaults = UserDefaults.standard
         defaults.set(Int(keyCode), forKey: dialogKeyCodeKey)
         defaults.set(Int(modifiers), forKey: dialogModifiersKey)
+        defaults.set(dialogModifierOrder.map { Int($0) }, forKey: dialogModifierOrderKey)
     }
 
     // MARK: - Add App hotkey
 
-    func updateAddApp(keyCode: UInt32, modifiers: UInt32) {
+    func updateAddApp(keyCode: UInt32, modifiers: UInt32, order: [UInt32]? = nil) {
         self.addAppKeyCode = keyCode
         self.addAppModifiers = modifiers
+        addAppModifierOrder = order ?? Self.defaultOrder(for: modifiers)
         onAddAppChanged?()
     }
 
     var addAppDisplayString: String {
-        KeyBinding(keyCode: addAppKeyCode, modifiers: addAppModifiers).displayString
+        KeyBinding(keyCode: addAppKeyCode, modifiers: addAppModifiers, modifierOrder: addAppModifierOrder).displayString
     }
 
     private func saveAddApp() {
         let defaults = UserDefaults.standard
         defaults.set(Int(addAppKeyCode), forKey: addAppKeyCodeKey)
         defaults.set(Int(addAppModifiers), forKey: addAppModifiersKey)
+        defaults.set(addAppModifierOrder.map { Int($0) }, forKey: addAppModifierOrderKey)
     }
 
     // MARK: - Slot hotkey settings
@@ -211,9 +240,13 @@ class HotkeySettings: ObservableObject {
         orderedModifierDisplayString(slotModifierOrder)
     }
 
-    func updateCustomBinding(index: Int, keyCode: UInt32, modifiers: UInt32) {
+    func updateCustomBinding(index: Int, keyCode: UInt32, modifiers: UInt32, order: [UInt32]? = nil) {
         guard index >= 0, index < 12 else { return }
-        customBindings[index] = KeyBinding(keyCode: keyCode, modifiers: modifiers)
+        customBindings[index] = KeyBinding(
+            keyCode: keyCode,
+            modifiers: modifiers,
+            modifierOrder: order ?? Self.defaultOrder(for: modifiers)
+        )
         onSlotHotkeysChanged?()
     }
 
@@ -264,6 +297,13 @@ class HotkeySettings: ObservableObject {
 
     /// Short label for the slot badge in the dialog (e.g. "F1", "Ctrl+1", "Opt+A")
     func slotLabel(_ index: Int) -> String {
+        if slotMode == .modifierNumber, let binding = bindingForSlot(index) {
+            let modifierLabel = orderedModifierDisplayString(slotModifierOrder)
+            return [modifierLabel, keyCodeToString(binding.keyCode)]
+                .filter { !$0.isEmpty }
+                .joined(separator: "+")
+        }
+
         if let binding = bindingForSlot(index) {
             return binding.displayString
         }
@@ -326,11 +366,23 @@ func modifierDisplayString(_ mods: UInt32) -> String {
 
 /// Human-readable label for modifiers in a specific order.
 func orderedModifierDisplayString(_ order: [UInt32]) -> String {
+    orderedModifierLabels(order, fallbackModifiers: 0).joined(separator: "+")
+}
+
+func orderedModifierLabels(_ order: [UInt32]?, fallbackModifiers: UInt32) -> [String] {
+    let normalizedOrder = {
+        if let order, !order.isEmpty {
+            return order
+        }
+        return HotkeySettings.defaultOrder(for: fallbackModifiers)
+    }()
+
     let labels: [UInt32: String] = [
         UInt32(controlKey): "Ctrl",
         UInt32(optionKey): "Opt",
         UInt32(shiftKey): "Shift",
         UInt32(cmdKey): "Cmd",
     ]
-    return order.compactMap { labels[$0] }.joined(separator: "+")
+
+    return normalizedOrder.compactMap { labels[$0] }
 }
