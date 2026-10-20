@@ -6,6 +6,8 @@
     <string>Spearo</string>
     <key>CFBundleDisplayName</key>
     <string>Spearo</string>
+    <key>CFBundleExecutable</key>
+    <string>Spearo</string>
     <key>CFBundleIdentifier</key>
     <string>com.spearo.app</string>
     <key>CFBundleVersion</key>

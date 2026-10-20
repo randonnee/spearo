@@ -45,8 +45,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupMenuBar() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
+        // Older SwiftPM accessors do not search Contents/Resources.
+        let resourceBundle = Bundle.main.url(forResource: "Spearo_Spearo", withExtension: "bundle")
+            .flatMap { Bundle(url: $0) } ?? Bundle.module
+
         if let button = statusItem.button {
-            if let svgURL = Bundle.module.url(forResource: "spear-tip", withExtension: "svg"),
+            if let svgURL = resourceBundle.url(forResource: "spear-tip", withExtension: "svg"),
                let icon = NSImage(contentsOf: svgURL) {
                 icon.isTemplate = true
                 icon.size = NSSize(width: 18, height: 18)

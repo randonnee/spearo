@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" role="img" aria-labelledby="title description">
+  <title id="title">Spearo</title>
+  <desc id="description">A satin-blue spear with softly sculpted, symmetric barbs and a tapered shaft, pointing northeast on a porcelain-white tile.</desc>
+  <defs>
+    <linearGradient id="porcelain" x1="512" y1="64" x2="512" y2="960" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#F3F5FA"/>
+    </linearGradient>
+    <linearGradient id="tile-edge" x1="512" y1="64" x2="512" y2="960" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset=".5" stop-color="#EDF0F5"/>
+      <stop offset="1" stop-color="#DFE5EE"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="430" y1="170" x2="590" y2="822" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#24AEF5"/>
+      <stop offset=".46" stop-color="#087FEF"/>
+      <stop offset="1" stop-color="#174ED0"/>
+    </linearGradient>
+    <linearGradient id="depth" x1="512" y1="170" x2="512" y2="822" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1686DC"/>
+      <stop offset="1" stop-color="#153DA7"/>
+    </linearGradient>
+    <radialGradient id="surface-light" cx="0" cy="0" r="1" gradientTransform="translate(350 350) rotate(20) scale(500 380)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#B8F5FF" stop-opacity=".16"/>
+      <stop offset="1" stop-color="#B8F5FF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="bevel" x1="340" y1="220" x2="670" y2="800" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D0F8FF" stop-opacity=".85"/>
+      <stop offset=".5" stop-color="#8AD8FF" stop-opacity=".35"/>
+      <stop offset="1" stop-color="#1745AA" stop-opacity=".2"/>
+    </linearGradient>
+    <filter id="tile-shadow" x="0" y="16" width="1024" height="1008" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#152C53" flood-opacity=".1"/>
+    </filter>
+    <filter id="spear-shadow" x="208" y="208" width="608" height="624" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="12" stdDeviation="11" flood-color="#164786" flood-opacity=".17"/>
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#133E82" flood-opacity=".13"/>
+    </filter>
+    <path id="tile" d="M288 64H736C885 64 960 139 960 288V736C960 885 885 960 736 960H288C139 960 64 885 64 736V288C64 139 139 64 288 64Z"/>
+    <path id="spear" d="
+      M510.7 174Q512 167 513.3 174
+      C526 230 544 326 552 371
+      C555 388 562 401 576 413
+      L750 560Q759 568 748 564
+      C687 539 626 521 560 504
+      C548 501 541 506 541 519
+      L537 797C537 810.8 525.8 822 512 822
+      C498.2 822 487 810.8 487 797
+      L483 519C483 506 476 501 464 504
+      C398 521 337 539 276 564
+      Q265 568 274 560
+      L448 413C462 401 469 388 472 371
+      C480 326 498 230 510.7 174Z
+    "/>
+    <clipPath id="spear-clip">
+      <use href="#spear"/>
+    </clipPath>
+  </defs>
+  <g filter="url(#tile-shadow)">
+    <use href="#tile" fill="url(#porcelain)" stroke="url(#tile-edge)" stroke-width="1.25"/>
+  </g>
+  <g filter="url(#spear-shadow)">
+    <g transform="translate(504 520) rotate(45) scale(1.08) translate(-512 -512)">
+      <use href="#spear" transform="translate(2.5 2.5)" fill="url(#depth)"/>
+      <use href="#spear" fill="url(#blue)"/>
+      <g clip-path="url(#spear-clip)">
+        <use href="#spear" fill="url(#surface-light)"/>
+        <use href="#spear" stroke="url(#bevel)" stroke-width="2"/>
+      </g>
+    </g>
+  </g>
+</svg>

@@ -2,11 +2,12 @@
 set -e
 
 APP_NAME="Spearo"
-BUILD_DIR=".build/release"
 APP_BUNDLE="$APP_NAME.app"
+RESOURCE_BUNDLE="${APP_NAME}_${APP_NAME}.bundle"
 
 echo "Building $APP_NAME in release mode..."
 swift build -c release
+BUILD_DIR="$(swift build -c release --show-bin-path)"
 
 echo "Creating app bundle..."
 rm -rf "$APP_BUNDLE"
@@ -21,6 +22,13 @@ cp "Sources/Spearo/Info.plist" "$APP_BUNDLE/Contents/Info.plist"
 
 # Copy app icon
 cp "Sources/Spearo/Resources/AppIcon.icns" "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
+
+# Bundle.module requires the SwiftPM resource bundle at runtime.
+cp -R "$BUILD_DIR/$RESOURCE_BUNDLE" "$APP_BUNDLE/Contents/Resources/$RESOURCE_BUNDLE"
+
+echo "Signing app bundle for local use..."
+codesign --force --sign - "$APP_BUNDLE"
+codesign --verify --deep --strict "$APP_BUNDLE"
 
 echo "Build complete: $APP_BUNDLE"
 echo ""

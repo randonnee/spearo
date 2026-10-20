@@ -25,6 +25,8 @@ swift build              # debug build
 open Spearo.app          # run (then grant Accessibility in System Settings)
 ```
 
+`build.sh` includes SwiftPM resources in `Contents/Resources` and ad-hoc signs the completed app for local use. Keep resource lookup and packaging aligned so installed builds launch without the build directory.
+
 ## Code Overview
 
 ```
